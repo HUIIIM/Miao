@@ -12,4 +12,4 @@ Jiahui Miao's personal lab — small experiments, notes, and scratch work that d
 Nothing here is a product or a promise — when something grows up, it moves to its own repository under vertciti.
 
 ---
-*vertciti · Founder: Jiahui Miao*
+*[vertciti](https://vertciti.com) · Founder: Jiahui Miao*
