@@ -1,21 +1,32 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-# Miao
+# Miao — public experiment log
 
-**Jiahui Miao's personal lab** — small experiments, notes, and scratch work.
+**苗家辉的公开实验日志。** Small experiments, notes, and scratch work from building a personal AI — written down as they happen.
 
-苗家辉的个人实验仓库：小想法、笔记和草稿，尚不成产品的不进主仓库。
+> 🧭 New here? Start at [@HUIIIM](https://github.com/HUIIIM) — that's the front door. This repo is the lab notebook behind it.
+
+## Status, honestly (2026-10-09)
+
+77 days, 5 commits, 0 stars. This log is just getting started — the numbers stay honest here. Small is fine; invented is not.
+
+（建仓 77 天，5 个 commits，0 stars —— 刚起步，数字如实记录。）
 
 ## What lives here
 
-- Tiny prototypes and one-off scripts
+- Tiny prototypes and one-off scripts — each one runnable, each with its real output attached
 - Notes and drafts that aren't ready for a product repo
 
-Nothing here is a product or a promise — when something grows up, it moves
-to its own repository.
+**The bar for an experiment to land here:** a runnable minimal loop + a paragraph of human narrative + real output as evidence. No demo, no entry — nothing is invented to look busy.
 
-> Note: the private `miao` personal-AI engine is a separate project and does
-> not live in this repo. This repo is just the lab notebook.
+Nothing here is a product or a promise — when something grows up, it moves to its own repository.
+
+> Note: the private `miao` personal-AI engine is a separate project and does not live in this repo. This repo is only the public log of experiments.
+
+## Find your way around
+
+- 🌐 [vertciti.com](https://vertciti.com) — build logs & narrative
+- 👤 [@HUIIIM](https://github.com/HUIIIM) — profile, projects, and the front door
 
 ## License
 
