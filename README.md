@@ -1,38 +1,41 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+# Miao
 
-# Miao — public experiment log
+苗家辉（Jiahui Miao）的公开实验室：a personal lab repository for small experiments, notes and scratch work
+from building a personal AI. It is not a product.
 
-**苗家辉的公开实验日志。** Small experiments, notes, and scratch work from building a personal AI — written down as they happen.
+| | |
+|---|---|
+| Status | lab — personal experiments; no experiment has been committed yet (the repository holds this README, a licence and a `.gitignore`) |
+| Type | personal lab repository |
+| Licence | MIT ([LICENSE](LICENSE)), Copyright (c) 2026 Jiahui Miao |
+| Languages | English · 简体中文 |
+| Contact | Profile: [@HUIIIM](https://github.com/HUIIIM) · Build logs: [vertciti.com](https://vertciti.com) |
 
-> 🧭 New here? Start at [@HUIIIM](https://github.com/HUIIIM) — that's the front door. This repo is the lab notebook behind it.
+## Overview
 
-## Status, honestly (2026-10-09)
+This repository is a lab notebook. It is meant for tiny prototypes, one-off scripts and notes that are not
+ready for a product repository. Nothing here is a product or a commitment; when an experiment grows into
+something larger, it moves to its own repository.
 
-77 days, 5 commits, 0 stars. This log is just getting started — the numbers stay honest here. Small is fine; invented is not.
+The private `miao` personal-AI engine is a separate project and does not live here.
 
-（建仓 77 天，5 个 commits，0 stars —— 刚起步，数字如实记录。）
+## What an entry needs
 
-## What lives here
+An experiment is added only when it has:
 
-- Tiny prototypes and one-off scripts — each one runnable, each with its real output attached
-- Notes and drafts that aren't ready for a product repo
+- a runnable minimal loop,
+- a short paragraph explaining what was tried and why,
+- its real output, committed as evidence.
 
-**The bar for an experiment to land here:** a runnable minimal loop + a paragraph of human narrative + real output as evidence. No demo, no entry — nothing is invented to look busy.
+Nothing is added to make the repository look active.
 
-Nothing here is a product or a promise — when something grows up, it moves to its own repository.
+## Where to start
 
-> Note: the private `miao` personal-AI engine is a separate project and does not live in this repo. This repo is only the public log of experiments.
+- [@HUIIIM](https://github.com/HUIIIM) — profile and the list of product repositories
+- [vertciti.com](https://vertciti.com) — build logs
 
-## Find your way around
+## Licence
 
-- 🌐 [vertciti.com](https://vertciti.com) — build logs & narrative
-- 👤 [@HUIIIM](https://github.com/HUIIIM) — profile, projects, and the front door
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Jiahui Miao.
 
-## License
-
-| Component | License | What it means |
-|---|---|---|
-| Everything here | [MIT](LICENSE) | Use it, modify it, keep the copyright notice |
-
----
-*[vertciti](https://vertciti.com) · Founder: Jiahui Miao*
+Built by vertciti — https://vertciti.com
