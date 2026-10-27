@@ -8,7 +8,7 @@ from building a personal AI. It is not a product.
 | Status | lab — personal experiments; no experiment has been committed yet (the repository holds this README, a licence and a `.gitignore`) |
 | Type | personal lab repository |
 | Licence | MIT ([LICENSE](LICENSE)), Copyright (c) 2026 Jiahui Miao |
-| Languages | English · 简体中文 |
+| Languages | English; Chinese name only (苗家辉) |
 | Contact | Profile: [@HUIIIM](https://github.com/HUIIIM) · Build logs: [vertciti.com](https://vertciti.com) |
 
 ## Overview
@@ -33,6 +33,10 @@ Nothing is added to make the repository look active.
 
 - [@HUIIIM](https://github.com/HUIIIM) — profile and the list of product repositories
 - [vertciti.com](https://vertciti.com) — build logs
+
+## Security
+
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Never commit API keys or `.env` files; every push is scanned for secrets.
 
 ## Licence
 
