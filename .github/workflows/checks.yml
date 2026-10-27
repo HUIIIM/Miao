@@ -1,0 +1,25 @@
+# Blocking checks on every PR and push to main: unit tests, the entry checker over experiments/,
+# and a Python syntax check. SOTA VER-1. Actions are pinned by commit SHA (SOTA SEC-A5).
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    name: tests + entry check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python syntax
+        run: python3 -m py_compile scripts/*.py tests/*.py experiments/_template/run.py
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Every experiment meets the entry rule
+        run: python3 scripts/check_entry.py

@@ -23,11 +23,8 @@ venv/
 node_modules/
 npm-debug.log*
 
-# Build, test and coverage output
-dist/
-build/
-*.out
-coverage.*
+# Local coverage caches. Experiment output is evidence and is never ignored:
+# do not add *.out, coverage.*, build/ or dist/ here (tests/test_check_entry.py guards this).
 .coverage
 htmlcov/
 

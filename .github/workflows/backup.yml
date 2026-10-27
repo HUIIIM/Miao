@@ -1,0 +1,36 @@
+# Weekly full-history backup as a verified git bundle (SOTA OPS-1, see docs/RUNBOOK.md).
+# The artifact is stored by GitHub, so it protects against history rewrites and branch deletion,
+# not against losing the GitHub account. The off-GitHub copy is the owner's step in the runbook.
+name: Backup (git bundle)
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    name: bundle + verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create and verify bundle
+        run: |
+          git fetch --tags --force origin '+refs/heads/*:refs/remotes/origin/*'
+          git bundle create miao.bundle --all
+          git bundle verify miao.bundle
+          sha256sum miao.bundle | tee miao.bundle.sha256
+          git rev-parse HEAD > miao.bundle.head
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: miao-bundle-${{ github.run_id }}
+          path: |
+            miao.bundle
+            miao.bundle.sha256
+            miao.bundle.head
+          retention-days: 90
+          if-no-files-found: error
