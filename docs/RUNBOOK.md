@@ -9,10 +9,14 @@ Losing it loses the evidence that experiments rest on.
 |---|---|---|---|
 | 1 | github.com/HUIIIM/Miao | every push | — (primary) |
 | 2 | Actions artifact `miao-bundle-<run id>` from [`backup.yml`](../.github/workflows/backup.yml), kept 90 days | weekly (Sunday 03:00 UTC) and on demand | force-push, branch deletion, bad merge |
-| 3 | **Off-GitHub**: owner downloads the latest bundle to storage outside GitHub | monthly, owner | losing the GitHub account or organisation |
+| 3 | **Off-GitHub**: the owner's Google Drive backup set, 「JARVIS 系统备份」 → `<snapshot>/L2-工程层/HUIIIM-Miao-mirror-<date>.bundle` | refreshed with the owner's weekly backup increment | losing the GitHub account or organisation |
 
-Copy 3 is a manual step for the owner. Until it has been done at least once, the repository has no off-site
-backup, and SOTA OPS-1 stays failed.
+Copy 3 is kept by the owner outside GitHub. The first copy is
+`2026-10-27-incremental/L2-工程层/HUIIIM-Miao-mirror-2026-10-27.bundle`: a `git bundle --all` of a fresh
+`git clone --mirror`, 36,426 bytes, SHA-256 `1e353169b240ca2d6babc612cb38efc6d2e22a5f4332f09bac3e3100317d00c0`.
+The owner reported its verification on PR #6 (see the drill log). The fixity list
+`fixity-manifest-2026-10-27-incremental-L2L3.sha256` is kept in the same snapshot folder. To check a downloaded
+copy, compare its SHA-256 with that value, then follow **Restore** below.
 
 A bundle must be made from a **mirror** clone. A bundle of an ordinary clone stores other branches as
 `refs/remotes/origin/*`, which `git clone` does not restore. A bundle of a clone that has not fetched records
@@ -55,6 +59,7 @@ Do a timed restore at least once a quarter, and record each drill here.
 | Date | Who | Source | Result | Time | Notes |
 |---|---|---|---|---|---|
 | 2026-10-27 | author session (wrote PR #6), sandbox | `git bundle --all` of an unfetched local clone at `16a9465` | ok, but flawed: verify ok, fsck clean, 11 commits | 0.13 s (10.9 KB) | The local `main` ref was stale (`5c88515`). The independent assessor then showed that restoring with `git clone` loses non-`main` branches. Both are fixed by the mirror procedure above. Not off-site. |
+| 2026-10-27 | owner (reported on PR #6) | off-site copy 3, downloaded back from Google Drive | ok: Drive md5 and downloaded SHA-256 match the source; `bundle verify` ok; restored `main` = `16a9465`, `claude/sota-roadmap-fixes` = `6e03954`, level with GitHub; no tags; fsck clean | not recorded | First off-site copy. Reported by the owner, not re-checked by this session, which has no access to the Drive. |
 | 2026-10-28 | author session (wrote PR #6), sandbox | mirror of github.com/HUIIIM/Miao (6 refs incl. `refs/pull/*`), bundle 23.9 KB | ok: restored refs = bundle heads = GitHub refs; `fsck --full` empty; the branches-and-tags push below rebuilt both branches on a new bare host | backup 0.81 s, restore and push 0.11 s | Not off-site. Not an independent drill: the assessor or owner should repeat it on a downloaded artifact. |
 
 ## Leaked secret
