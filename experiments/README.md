@@ -1,14 +1,15 @@
 # Experiments
 
 One directory per experiment, `YYYY-MM-DD-slug/`. Copy [`_template/`](_template/) to start.
-[`scripts/check_entry.py`](../scripts/check_entry.py) enforces the rules below on every PR, and the PR
-cannot pass while an entry breaks them.
+[`scripts/check_entry.py`](../scripts/check_entry.py) enforces the rules below. The `Checks` workflow runs it on every
+PR and fails when an entry breaks them. It blocks a merge only if `Checks` is a required status check in the
+branch protection settings, which the owner sets.
 
 | File | What it is |
 |---|---|
-| `README.md` | At least one paragraph: what was tried, why, and what happened. Failed runs count. |
-| `run.sh`, `run.py` or a `.ipynb` | The runnable minimal loop. |
-| `output/` | The real output, unedited. Never ignored by `.gitignore`. |
+| `README.md` | At least one paragraph: what was tried, why, and what happened. Failed runs count. The template's placeholder is rejected. |
+| `run.sh`, `run.py` or a `.ipynb` | The runnable minimal loop. The template's stub is rejected. |
+| `output/` | The real output, unedited: at least one non-empty file. `.gitkeep` and empty files do not count, and no file may be a symbolic link. |
 | `run.json` | The run manifest: command, start time, duration, environment, status and the sha256 of every output file. |
 
 After a run, record the output hashes with:
@@ -37,8 +38,10 @@ python3 scripts/check_entry.py --write-manifest experiments/2026-11-01-my-test
 }
 ```
 
-The first seven fields are required. `status` is `works`, `failed` or `superseded`. A superseded entry needs
-`superseded_by`, and a run that went over `max_cost_usd` cannot be marked `works`.
+The first seven fields are required. `started_at` must be an ISO-8601 date-time with a timezone, `duration_s`,
+`cost_usd` and `max_cost_usd` must be finite numbers, and `model` must be a versioned id, not an alias such as
+`latest`. `status` is `works`, `failed` or `superseded`. A superseded entry needs `superseded_by`, and a run
+that went over `max_cost_usd` cannot be marked `works`.
 
 ## Never commit
 

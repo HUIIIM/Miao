@@ -1,36 +1,50 @@
-# Weekly full-history backup as a verified git bundle (SOTA OPS-1, see docs/RUNBOOK.md).
-# The artifact is stored by GitHub, so it protects against history rewrites and branch deletion,
-# not against losing the GitHub account. The off-GitHub copy is the owner's step in the runbook.
+# Weekly full-history backup as a verified git bundle of a mirror clone (SOTA OPS-1, see docs/RUNBOOK.md).
+# Every branch and tag is in the bundle as refs/heads/* and refs/tags/*, so `git clone --mirror` restores all of them.
+# The artifact is stored by GitHub: it protects against force-push, branch deletion and bad merges, not against
+# losing the GitHub account. The off-GitHub copy is the owner's step in the runbook.
+# It also runs on pull requests that change it, so a broken backup is caught before merge.
 name: Backup (git bundle)
 on:
   schedule:
     - cron: "0 3 * * 0"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/backup.yml
+      - docs/RUNBOOK.md
 permissions:
   contents: read
 jobs:
   bundle:
-    name: bundle + verify
+    name: bundle + verify + restore
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Create and verify bundle
+      - name: Mirror, bundle and verify
+        env:
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
         run: |
-          git fetch --tags --force origin '+refs/heads/*:refs/remotes/origin/*'
-          git bundle create miao.bundle --all
-          git bundle verify miao.bundle
+          git clone --quiet --mirror "$REPO_URL" mirror.git
+          git -C mirror.git for-each-ref --format='%(objectname) %(refname)' 'refs/heads/' 'refs/tags/' | sort > source.refs
+          git -C mirror.git bundle create ../miao.bundle --all
+          git -C mirror.git bundle verify ../miao.bundle
+          git bundle list-heads miao.bundle | grep ' refs/' | sort > miao.bundle.heads
           sha256sum miao.bundle | tee miao.bundle.sha256
-          git rev-parse HEAD > miao.bundle.head
+      - name: Restore drill (every run)
+        run: |
+          start=$(date +%s.%N)
+          git clone --quiet --mirror miao.bundle restored.git
+          test -z "$(git -C restored.git fsck --full 2>&1)"
+          git -C restored.git for-each-ref --format='%(objectname) %(refname)' 'refs/heads/' 'refs/tags/' | sort > restored.refs
+          diff source.refs restored.refs
+          echo "restored $(wc -l < restored.refs) branches/tags in $(python3 -c "import time; print(round(time.time() - $start, 2))") s" | tee restore-drill.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: miao-bundle-${{ github.run_id }}
           path: |
             miao.bundle
             miao.bundle.sha256
-            miao.bundle.head
+            miao.bundle.heads
+            restore-drill.txt
           retention-days: 90
           if-no-files-found: error

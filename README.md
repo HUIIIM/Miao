@@ -30,8 +30,8 @@ An experiment is added only when it has:
 Nothing is added to make the repository look active.
 
 The layout, the `run.json` manifest and what must never be committed are in
-[experiments/README.md](experiments/README.md). CI runs `scripts/check_entry.py` on every pull request, and an
-entry that breaks the rule fails it.
+[experiments/README.md](experiments/README.md). On every pull request, the `Checks` workflow runs
+`scripts/check_entry.py` and fails when an entry breaks the rule.
 
 ## Where to start
 
