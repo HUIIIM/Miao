@@ -44,7 +44,9 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Never commi
 
 ## Operations
 
-Backups and restore steps: [docs/RUNBOOK.md](docs/RUNBOOK.md).
+Backups and restore steps: [docs/RUNBOOK.md](docs/RUNBOOK.md). Besides GitHub, the history is kept as a weekly
+bundle artifact, in the owner's own backup set, and in the public [Software Heritage](https://www.softwareheritage.org)
+archive, which `scripts/offsite_check.py` verifies.
 
 ## Licence
 

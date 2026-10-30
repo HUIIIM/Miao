@@ -9,6 +9,7 @@ Losing it loses the evidence that experiments rest on.
 |---|---|---|---|
 | 1 | github.com/HUIIIM/Miao | every push | — (primary) |
 | 2 | Actions artifact `miao-bundle-<run id>` from [`backup.yml`](../.github/workflows/backup.yml), kept 90 days | weekly (Sunday 03:00 UTC) and on demand | force-push, branch deletion, bad merge |
+| 4 | **Off-GitHub, publicly verifiable**: the [Software Heritage](https://www.softwareheritage.org) archive, origin `https://github.com/HUIIIM/Miao` | weekly snapshot from [`offsite.yml`](../.github/workflows/offsite.yml); monthly timed vault restore | losing GitHub, the account and the owner's own storage |
 | 3 | **Off-GitHub**: the owner's Google Drive backup set, 「JARVIS 系统备份」 → `<snapshot>/L2-工程层/HUIIIM-Miao-mirror-<date>.bundle` | refreshed with the owner's weekly backup increment | losing the GitHub account or organisation |
 
 Copy 3 is kept by the owner outside GitHub. The first copy is
@@ -17,6 +18,13 @@ Copy 3 is kept by the owner outside GitHub. The first copy is
 The owner reported its verification on PR #6 (see the drill log). The fixity list
 `fixity-manifest-2026-10-27-incremental-L2L3.sha256` is kept in the same snapshot folder. To check a downloaded
 copy, compare its SHA-256 with that value, then follow **Restore** below.
+
+Copy 4 can be checked by anyone without access to the owner's storage. `scripts/offsite_check.py` reads the latest
+Software Heritage snapshot through the public API, and fails if it is missing, not `full`, older than 14 days,
+holds a commit this repository does not have, or shows `main` rewritten. Snapshot age is the off-site RPO. The
+first snapshot exists only after `offsite.yml` has run on `main` once, or after the owner presses
+**Save Code Now** at https://archive.softwareheritage.org/save/ for this URL. Until then the script reports
+"no snapshot yet".
 
 A bundle must be made from a **mirror** clone. A bundle of an ordinary clone stores other branches as
 `refs/remotes/origin/*`, which `git clone` does not restore. A bundle of a clone that has not fetched records
@@ -49,7 +57,23 @@ that exist on the host but not in the backup, and GitHub rejects its read-only `
 git -C Miao-restored.git push https://github.com/HUIIIM/Miao.git 'refs/heads/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
 ```
 
-Targets: RPO is one week for copy 2 and one month for copy 3. RTO is under 15 minutes, which is the time to
+### Restore from Software Heritage (copy 4)
+
+If GitHub and every other copy are gone, rebuild `main` from the archive's vault. `offsite.yml` runs these steps
+every month and records the time as `rto_seconds` in its `offsite-restore-drill-*` artifact.
+
+```bash
+api=https://archive.softwareheritage.org/api/1
+snap=$(curl -fsS "$api/origin/https://github.com/HUIIIM/Miao/visit/latest/?require_snapshot=true" | jq -r .snapshot)
+rev=$(curl -fsS "$api/snapshot/$snap/?branches_from=refs/heads/main&branches_count=1" | jq -r '.branches["refs/heads/main"].target')
+curl -fsS -X POST "$api/vault/git-bare/swh:1:rev:$rev/"           # then poll the same URL with GET until "status": "done"
+curl -fsSL -o miao.tar.gz "$api/vault/git-bare/swh:1:rev:$rev/raw/"
+mkdir restored && tar -xzf miao.tar.gz -C restored                 # a bare repository; clone it with --mirror
+```
+
+The vault rebuilds one branch per request, by revision. Repeat it for each branch listed in the snapshot.
+
+Targets: RPO is one week for copy 2 and one month for copy 3. For copy 4 it is the snapshot age, at most 14 days. RTO is under 15 minutes, which is the time to
 download one bundle and run the blocks above.
 
 ## Drill log

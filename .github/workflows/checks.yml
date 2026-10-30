@@ -29,7 +29,7 @@ jobs:
         run: .venv/bin/ruff check scripts tests
       - name: mypy
         run: |
-          .venv/bin/mypy --strict scripts/check_entry.py
+          .venv/bin/mypy --strict scripts/check_entry.py scripts/offsite_check.py
           .venv/bin/mypy tests
 
   tests:
