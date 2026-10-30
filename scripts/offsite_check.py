@@ -59,10 +59,20 @@ def latest_visit(origin: str, fetch: Callable[..., Any] = get_json) -> dict[str,
     try:
         visit: dict[str, Any] = fetch(f"{API}/origin/{origin_path(origin)}/visit/latest/?require_snapshot=true")
     except urllib.error.HTTPError as e:
-        if e.code == 404:
+        # Only "origin not found" means "not archived yet"; any other 404 (a wrong API path) is a real error.
+        reason = http_reason(e).lower() if e.code == 404 else ""
+        if "origin" in reason and "not found" in reason:
             return None
         raise
     return visit
+
+
+def http_reason(error: urllib.error.HTTPError) -> str:
+    try:
+        body = json.loads(error.read() or b"{}")
+    except (ValueError, OSError):
+        return ""
+    return str(body.get("reason", "")) if isinstance(body, dict) else ""
 
 
 def snapshot_branches(snapshot_id: str, fetch: Callable[..., Any] = get_json) -> dict[str, str]:
@@ -132,8 +142,10 @@ def compare(
     if default_branch not in tracked:
         errors.append(f"the archived snapshot has no {default_branch}")
     for ref, sha in sorted(tracked.items()):
-        if not has_commit(sha):
-            errors.append(f"archived {ref} = {sha[:12]} is not a commit in this repository (foreign history)")
+        if ref not in current and ref != default_branch:
+            notes.append(f"{ref} was archived but no longer exists here (deleted since the snapshot)")
+        elif not has_commit(sha):
+            errors.append(f"archived {ref} = {sha[:12]} is not a commit in this repository (history was replaced)")
     old, new = tracked.get(default_branch), current.get(default_branch)
     if old and new and old != new and has_commit(old):
         if is_ancestor(old, new):
@@ -145,16 +157,28 @@ def compare(
     return errors, notes
 
 
+def is_ready(visit: dict[str, Any] | None, not_before: dt.datetime | None) -> bool:
+    if visit is None or visit.get("status") != "full":
+        return False
+    return not_before is None or dt.datetime.fromisoformat(visit["date"].replace("Z", "+00:00")) >= not_before
+
+
 def verify(repo: Path, origin: str, max_age_days: float, wait_s: int, report: Path | None,
            fetch: Callable[..., Any] = get_json, now: Callable[[], dt.datetime] | None = None,
-           sleep: Callable[[float], None] = time.sleep) -> int:
+           sleep: Callable[[float], None] = time.sleep, not_before: dt.datetime | None = None) -> int:
+    """Verify the latest full snapshot. With not_before (the time of a save request), wait up to wait_s for a
+    snapshot taken after it; if none comes in time, verify the previous one and say so."""
     clock = now or (lambda: dt.datetime.now(dt.timezone.utc))
     deadline = clock() + dt.timedelta(seconds=wait_s)
     visit = latest_visit(origin, fetch)
-    while (visit is None or visit.get("status") != "full") and clock() < deadline:
+    while not is_ready(visit, not_before) and clock() < deadline:
         sleep(60)
         visit = latest_visit(origin, fetch)
     result: dict[str, Any] = {"origin": origin, "checked_at": clock().isoformat(), "errors": [], "notes": []}
+    if not_before is not None and visit is not None and visit.get("status") == "full" \
+            and not is_ready(visit, not_before):
+        result["notes"].append("no snapshot newer than the save request arrived in time; "
+                               "verified the previous snapshot instead")
     if visit is None or not visit.get("snapshot"):
         result["errors"].append(f"Software Heritage has no snapshot of {origin} yet")
     elif visit.get("status") != "full":
@@ -189,14 +213,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-age-days", type=float, default=14.0)
     ap.add_argument("--report", type=Path, help="also write the JSON result to this file")
     args = ap.parse_args(argv)
+    not_before = None
     if args.request_save:
+        not_before = dt.datetime.now(dt.timezone.utc)
         saved = request_save(args.origin)
         print(json.dumps({k: saved.get(k) for k in ("save_request_status", "save_task_status",
                                                      "save_request_date", "id")}))
         if saved.get("save_request_status") == "rejected":
             print("error: Software Heritage rejected the save request", file=sys.stderr)
             return 1
-    return verify(args.repo, args.origin, args.max_age_days, args.wait, args.report)
+    return verify(args.repo, args.origin, args.max_age_days, args.wait, args.report, not_before=not_before)
 
 
 if __name__ == "__main__":

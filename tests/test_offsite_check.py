@@ -33,6 +33,9 @@ class FakeArchive:
         self.branches, self.date, self.status = branches, date, status
         self.calls: list[tuple[str, str]] = []
         self.head = "refs/heads/main"
+        self.visits = 0
+        self.later_date: str | None = None
+        self.later_after = 0
 
     def __call__(self, url: str, method: str = "GET", timeout: int = 60) -> Any:
         self.calls.append((method, url))
@@ -40,8 +43,11 @@ class FakeArchive:
             return {"save_request_status": "accepted", "save_task_status": "pending"}
         if "/visit/latest/" in url:
             if self.branches is None:
-                raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)  # type: ignore[arg-type]
-            return {"date": self.date, "snapshot": "ab" * 20, "status": self.status}
+                body = io.BytesIO(b'{"exception":"NotFoundExc","reason":"Origin with url x not found!"}')
+                raise urllib.error.HTTPError(url, 404, "Not Found", {}, body)  # type: ignore[arg-type]
+            self.visits += 1
+            date = self.later_date if (self.later_date and self.visits > self.later_after) else self.date
+            return {"date": date, "snapshot": "ab" * 20, "status": self.status}
         refs = sorted((self.branches or {}).items())
         start = url.split("branches_from=")[1] if "branches_from=" in url else None
         if start:
@@ -69,11 +75,13 @@ class OffsiteCheckTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def run_verify(self, archive: FakeArchive, max_age: float = 14.0) -> tuple[int, str]:
+    def run_verify(self, archive: FakeArchive, max_age: float = 14.0, wait: int = 0,
+                   not_before: dt.datetime | None = None) -> tuple[int, str]:
         buf = io.StringIO()
+        ticks = iter(NOW + dt.timedelta(minutes=i) for i in range(10_000))
         with redirect_stdout(buf):
-            code = offsite.verify(self.repo, offsite.ORIGIN, max_age, 0, None, fetch=archive, now=lambda: NOW,
-                                  sleep=lambda s: None)
+            code = offsite.verify(self.repo, offsite.ORIGIN, max_age, wait, None, fetch=archive,
+                                  now=lambda: next(ticks), sleep=lambda s: None, not_before=not_before)
         return code, buf.getvalue()
 
     def test_matching_snapshot_passes(self) -> None:
@@ -103,7 +111,7 @@ class OffsiteCheckTest(unittest.TestCase):
     def test_foreign_commit_fails(self) -> None:
         code, out = self.run_verify(FakeArchive({"refs/heads/main": "f" * 40}))
         self.assertEqual(code, 1)
-        self.assertIn("foreign history", out)
+        self.assertIn("history was replaced", out)
 
     def test_rewritten_main_fails(self) -> None:
         git(self.repo, "reset", "-q", "--hard", self.c1)
@@ -132,6 +140,40 @@ class OffsiteCheckTest(unittest.TestCase):
         code, out = self.run_verify(archive)
         self.assertEqual(code, 0, out)
         self.assertIn('"default_branch": "refs/heads/master"', out)
+
+    # Regressions for the independent assessment of 18ed62e.
+
+    def test_deleted_branch_is_a_note_not_an_error(self) -> None:
+        code, out = self.run_verify(FakeArchive({"refs/heads/main": self.c2, "refs/heads/gone": "e" * 40}))
+        self.assertEqual(code, 0, out)
+        self.assertIn("no longer exists here", out)
+
+    def test_existing_branch_with_replaced_history_fails(self) -> None:
+        git(self.repo, "branch", "feature", self.c1)
+        code, out = self.run_verify(FakeArchive({"refs/heads/main": self.c2, "refs/heads/feature": "e" * 40}))
+        self.assertEqual(code, 1)
+        self.assertIn("history was replaced", out)
+
+    def test_save_request_waits_for_a_newer_snapshot(self) -> None:
+        archive = FakeArchive({"refs/heads/main": self.c2}, date="2026-10-30T12:00:00+00:00")
+        archive.later_date, archive.later_after = "2026-11-01T12:05:00+00:00", 3
+        code, out = self.run_verify(archive, wait=600, not_before=NOW)
+        self.assertEqual(code, 0, out)
+        self.assertIn('"visit_date": "2026-11-01T12:05:00+00:00"', out)
+        self.assertNotIn("previous snapshot", out)
+
+    def test_save_request_timeout_says_it_used_the_previous_snapshot(self) -> None:
+        archive = FakeArchive({"refs/heads/main": self.c2}, date="2026-10-30T12:00:00+00:00")
+        code, out = self.run_verify(archive, wait=180, not_before=NOW)
+        self.assertEqual(code, 0, out)
+        self.assertIn("verified the previous snapshot instead", out)
+
+    def test_other_404_is_raised_not_reported_as_missing_snapshot(self) -> None:
+        def wrong_path(url: str, method: str = "GET", timeout: int = 60) -> Any:
+            raise urllib.error.HTTPError(url, 404, "Not Found", {},  # type: ignore[arg-type]
+                                         io.BytesIO(b'{"reason":"Resource not found"}'))
+        with self.assertRaises(urllib.error.HTTPError):
+            offsite.latest_visit(offsite.ORIGIN, wrong_path)
 
     def test_remote_tracking_branches_count_as_heads(self) -> None:
         git(self.repo, "update-ref", "refs/remotes/origin/feature", self.c1)

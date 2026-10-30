@@ -9,8 +9,8 @@ Losing it loses the evidence that experiments rest on.
 |---|---|---|---|
 | 1 | github.com/HUIIIM/Miao | every push | — (primary) |
 | 2 | Actions artifact `miao-bundle-<run id>` from [`backup.yml`](../.github/workflows/backup.yml), kept 90 days | weekly (Sunday 03:00 UTC) and on demand | force-push, branch deletion, bad merge |
-| 4 | **Off-GitHub, publicly verifiable**: the [Software Heritage](https://www.softwareheritage.org) archive, origin `https://github.com/HUIIIM/Miao` | weekly snapshot from [`offsite.yml`](../.github/workflows/offsite.yml); monthly timed vault restore | losing GitHub, the account and the owner's own storage |
 | 3 | **Off-GitHub**: the owner's Google Drive backup set, 「JARVIS 系统备份」 → `<snapshot>/L2-工程层/HUIIIM-Miao-mirror-<date>.bundle` | refreshed with the owner's weekly backup increment | losing the GitHub account or organisation |
+| 4 | **Off-GitHub, publicly verifiable**: the [Software Heritage](https://www.softwareheritage.org) archive, origin `https://github.com/HUIIIM/Miao` | weekly snapshot from [`offsite.yml`](../.github/workflows/offsite.yml); monthly timed vault restore | losing GitHub, the account and the owner's own storage |
 
 Copy 3 is kept by the owner outside GitHub. The first copy is
 `2026-10-27-incremental/L2-工程层/HUIIIM-Miao-mirror-2026-10-27.bundle`: a `git bundle --all` of a fresh
@@ -73,8 +73,9 @@ mkdir restored && tar -xzf miao.tar.gz -C restored                 # a bare repo
 
 The vault rebuilds one branch per request, by revision. Repeat it for each branch listed in the snapshot.
 
-Targets: RPO is one week for copy 2 and one month for copy 3. For copy 4 it is the snapshot age, at most 14 days. RTO is under 15 minutes, which is the time to
-download one bundle and run the blocks above.
+Targets: RPO is one week for copy 2 and one month for copy 3. For copy 4 it is the snapshot age, at most 14 days. RTO for copies 2 and 3 is under 15 minutes, which is the time
+to download one bundle and run the blocks above. RTO for copy 4 is longer, because the vault must first rebuild
+the repository; the monthly drill measures it, and the workflow allows up to 100 minutes.
 
 ## Drill log
 

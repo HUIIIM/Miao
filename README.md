@@ -45,8 +45,10 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Never commi
 ## Operations
 
 Backups and restore steps: [docs/RUNBOOK.md](docs/RUNBOOK.md). Besides GitHub, the history is kept as a weekly
-bundle artifact, in the owner's own backup set, and in the public [Software Heritage](https://www.softwareheritage.org)
-archive, which `scripts/offsite_check.py` verifies.
+bundle artifact and in the owner's own backup set. A weekly workflow also asks the public
+[Software Heritage](https://www.softwareheritage.org) archive for a snapshot, and `scripts/offsite_check.py`
+verifies it. The archive holds no snapshot of this repository yet; the first is taken when that workflow first
+runs on `main`.
 
 ## Licence
 
