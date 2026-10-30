@@ -10,5 +10,5 @@ Expect a first response within 48 hours.
 
 ## Secrets
 
-This repository is public. Never commit API keys, tokens or `.env` files. Every push and pull request is scanned
+This repository is public. Never commit API keys, tokens or `.env` files. Every pull request and every push to `main` is scanned
 with gitleaks (`.github/workflows/gitleaks.yml`); if a secret does land, rotate it first, then remove it from history.

@@ -23,11 +23,9 @@ venv/
 node_modules/
 npm-debug.log*
 
-# Build, test and coverage output
-dist/
-build/
-*.out
-coverage.*
+# Local coverage caches. Do not add *.out, coverage.*, build/ or dist/ here: they hid committed experiment
+# output (tests/test_check_entry.py guards this). The secret and cache patterns above still apply inside
+# experiments/*/output/ on purpose; if one hides a file that run.json lists, scripts/check_entry.py fails.
 .coverage
 htmlcov/
 

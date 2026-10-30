@@ -5,7 +5,7 @@ from building a personal AI. It is not a product.
 
 | | |
 |---|---|
-| Status | lab — personal experiments; no experiment has been committed yet (the repository holds this README, a licence and a `.gitignore`) |
+| Status | lab — personal experiments; no experiment has been committed yet (the repository holds the entry rules, a checker, a template and CI) |
 | Type | personal lab repository |
 | Licence | MIT ([LICENSE](LICENSE)), Copyright (c) 2026 Jiahui Miao |
 | Languages | English; Chinese name only (苗家辉) |
@@ -29,6 +29,10 @@ An experiment is added only when it has:
 
 Nothing is added to make the repository look active.
 
+The layout, the `run.json` manifest and what must never be committed are in
+[experiments/README.md](experiments/README.md). On every pull request, the `Checks` workflow runs
+`scripts/check_entry.py` and fails when an entry breaks the rule.
+
 ## Where to start
 
 - [@HUIIIM](https://github.com/HUIIIM) — profile and the list of product repositories
@@ -36,7 +40,15 @@ Nothing is added to make the repository look active.
 
 ## Security
 
-Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Never commit API keys or `.env` files; every push is scanned for secrets.
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md). Never commit API keys or `.env` files; every pull request and every push to `main` is scanned for secrets.
+
+## Operations
+
+Backups and restore steps: [docs/RUNBOOK.md](docs/RUNBOOK.md). Besides GitHub, the history is kept as a weekly
+bundle artifact and in the owner's own backup set. A weekly workflow also asks the public
+[Software Heritage](https://www.softwareheritage.org) archive for a snapshot, and `scripts/offsite_check.py`
+verifies it. The archive holds no snapshot of this repository yet; the first is taken when that workflow first
+runs on `main`.
 
 ## Licence
 

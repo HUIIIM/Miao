@@ -1,0 +1,84 @@
+# Off-site copy in the Software Heritage archive, outside GitHub (SOTA OPS-1, docs/RUNBOOK.md copy 4).
+# Weekly: ask the archive for a fresh snapshot of this public repository, then verify it against GitHub.
+# Monthly (and on demand): restore main from the archive's vault and time it, as the off-site restore drill.
+# Runs only on main (schedule or manual dispatch); unit tests for the verifier run in checks.yml on every PR.
+name: Off-site copy (Software Heritage)
+on:
+  schedule:
+    - cron: "0 4 * * 1"   # weekly snapshot + verify
+    - cron: "0 5 1 * *"   # monthly vault restore drill
+  workflow_dispatch:
+    inputs:
+      restore_drill:
+        description: "Also run the vault restore drill"
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    name: snapshot + verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch every branch
+        run: git fetch --quiet --tags origin '+refs/heads/*:refs/remotes/origin/*'
+      - name: Request a snapshot and verify it (waits up to 30 minutes for the archive)
+        run: python3 scripts/offsite_check.py --request-save --wait 1800 --report offsite-report.json
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-report-${{ github.run_id }}
+          path: offsite-report.json
+          retention-days: 400
+          if-no-files-found: warn
+
+  restore-drill:
+    name: vault restore drill
+    needs: snapshot
+    if: github.event.schedule == '0 5 1 * *' || (github.event_name == 'workflow_dispatch' && inputs.restore_drill)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Restore main from the Software Heritage vault and time it
+        run: |
+          set -euo pipefail
+          api=https://archive.softwareheritage.org/api/1
+          origin=https://github.com/HUIIIM/Miao
+          expected=$(git ls-remote "$origin.git" refs/heads/main | cut -f1)
+          snap=$(curl -fsS "$api/origin/$origin/visit/latest/?require_snapshot=true" | jq -r .snapshot)
+          rev=$(curl -fsS "$api/snapshot/$snap/?branches_from=refs/heads/main&branches_count=1" \
+                | jq -r '.branches["refs/heads/main"].target')
+          swhid="swh:1:rev:$rev"
+          start=$(date +%s)
+          curl -fsS -X POST "$api/vault/git-bare/$swhid/" > /dev/null
+          for _ in $(seq 1 100); do
+            status=$(curl -fsS "$api/vault/git-bare/$swhid/" | jq -r .status)
+            [ "$status" = done ] && break
+            [ "$status" = failed ] && { echo "vault cooking failed"; exit 1; }
+            sleep 60
+          done
+          [ "$status" = done ] || { echo "vault did not finish in time"; exit 1; }
+          curl -fsSL -o restored.tar.gz "$api/vault/git-bare/$swhid/raw/"
+          mkdir restored && tar -xzf restored.tar.gz -C restored
+          head_file=$(find restored -maxdepth 3 -type f -name HEAD | head -1)
+          [ -n "$head_file" ] || { echo "no git repository in the vault archive"; exit 1; }
+          repo=$(dirname "$head_file")
+          git clone --quiet --mirror "$repo" miao-restored.git
+          test -z "$(git -C miao-restored.git fsck --full 2>&1)"
+          git -C miao-restored.git cat-file -e "$rev^{commit}"
+          elapsed=$(( $(date +%s) - start ))
+          behind=$( [ "$rev" = "$expected" ] && echo 0 || echo "archived $rev, GitHub $expected" )
+          printf '{"date":"%s","swhid":"%s","restored_main":"%s","github_main":"%s","fsck":"clean","rto_seconds":%s,"gap":"%s"}\n' \
+            "$(date -u +%FT%TZ)" "$swhid" "$rev" "$expected" "$elapsed" "$behind" | tee restore-drill.json
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-restore-drill-${{ github.run_id }}
+          path: restore-drill.json
+          retention-days: 400
+          if-no-files-found: warn
