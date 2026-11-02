@@ -168,6 +168,30 @@ class OffsiteCheckTest(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("verified the previous snapshot instead", out)
 
+    def test_origin_without_snapshot_yet_waits_instead_of_crashing(self) -> None:
+        """Regression (assessment of f5d0bbb): right after the first save request the origin exists but has no
+        visit with a snapshot, and swh-web answers 404 "No visit for origin ... found". That crashed the
+        first offsite.yml run instead of waiting."""
+        calls = {"n": 0}
+
+        def early(url: str, method: str = "GET", timeout: int = 60) -> Any:
+            calls["n"] += 1
+            if calls["n"] <= 2:
+                raise urllib.error.HTTPError(url, 404, "Not Found", {},  # type: ignore[arg-type]
+                                             io.BytesIO(b'{"exception":"NotFoundExc",'
+                                                        b'"reason":"No visit for origin https://x found"}'))
+            return FakeArchive({"refs/heads/main": self.c2}, date="2026-11-01T12:05:00+00:00")(url, method)
+
+        self.assertIsNone(offsite.latest_visit(offsite.ORIGIN, lambda u, method="GET", timeout=60: (_ for _ in ()).throw(
+            urllib.error.HTTPError(u, 404, "Not Found", {},  # type: ignore[arg-type]
+                                   io.BytesIO(b'{"reason":"No visit for origin https://x found"}')))))
+        buf = io.StringIO()
+        ticks = iter(NOW + dt.timedelta(minutes=i) for i in range(1000))
+        with redirect_stdout(buf):
+            code = offsite.verify(self.repo, offsite.ORIGIN, 14.0, 600, None, fetch=early,
+                                  now=lambda: next(ticks), sleep=lambda s: None, not_before=NOW)
+        self.assertEqual(code, 0, buf.getvalue())
+
     def test_other_404_is_raised_not_reported_as_missing_snapshot(self) -> None:
         def wrong_path(url: str, method: str = "GET", timeout: int = 60) -> Any:
             raise urllib.error.HTTPError(url, 404, "Not Found", {},  # type: ignore[arg-type]

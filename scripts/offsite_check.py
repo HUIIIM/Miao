@@ -60,8 +60,10 @@ def latest_visit(origin: str, fetch: Callable[..., Any] = get_json) -> dict[str,
         visit: dict[str, Any] = fetch(f"{API}/origin/{origin_path(origin)}/visit/latest/?require_snapshot=true")
     except urllib.error.HTTPError as e:
         # Only "origin not found" means "not archived yet"; any other 404 (a wrong API path) is a real error.
+        # swh-web answers 404 in two "not archived yet" states: "Origin with url ... not found!" before the
+        # first save, and "No visit for origin ... found" once the origin exists but no visit has a snapshot.
         reason = http_reason(e).lower() if e.code == 404 else ""
-        if "origin" in reason and "not found" in reason:
+        if ("origin" in reason and "not found" in reason) or reason.startswith("no visit for origin"):
             return None
         raise
     return visit
