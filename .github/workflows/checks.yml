@@ -1,0 +1,53 @@
+# Blocking checks on every PR and push to main (SOTA VER-1, STANDARDS QA-1/QA-2/QA-4):
+# lint (ruff), strict type check (mypy), unit tests on the oldest and newest supported Python,
+# and the entry checker over experiments/. Actions and tools are pinned (SOTA SEC-A5).
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint + typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned tools (hash-checked)
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check --require-hashes --only-binary=:all: -r requirements-dev.txt
+      - name: ruff
+        run: .venv/bin/ruff check scripts tests
+      - name: mypy
+        run: |
+          .venv/bin/mypy --strict scripts/check_entry.py scripts/offsite_check.py
+          .venv/bin/mypy tests
+
+  tests:
+    name: tests + entry check (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Every experiment meets the entry rule
+        run: python scripts/check_entry.py
