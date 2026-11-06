@@ -30,7 +30,7 @@ jobs:
       - name: Request a snapshot and verify it (waits up to 30 minutes for the archive)
         run: python3 scripts/offsite_check.py --request-save --wait 1800 --report offsite-report.json
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: offsite-report-${{ github.run_id }}
           path: offsite-report.json
@@ -76,7 +76,7 @@ jobs:
           printf '{"date":"%s","swhid":"%s","restored_main":"%s","github_main":"%s","fsck":"clean","rto_seconds":%s,"gap":"%s"}\n' \
             "$(date -u +%FT%TZ)" "$swhid" "$rev" "$expected" "$elapsed" "$behind" | tee restore-drill.json
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: offsite-restore-drill-${{ github.run_id }}
           path: restore-drill.json
