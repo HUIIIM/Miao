@@ -269,7 +269,7 @@ class RepositoryTest(unittest.TestCase):
         ]
         result = subprocess.run(
             ["git", "-C", str(HERE.parent), "check-ignore", "--no-index", "--verbose", *paths],
-            capture_output=True, text=True,
+            check=False, capture_output=True, text=True,
         )
         self.assertEqual(result.stdout, "", f"ignored by .gitignore: {result.stdout}")
 
