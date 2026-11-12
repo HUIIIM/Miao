@@ -94,7 +94,7 @@ def output_files(entry: Path) -> dict[str, Path]:
 
 
 def prose_paragraphs(text: str) -> list[str]:
-    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
     paragraphs = []
     for block in re.split(r"\n\s*\n", text):
         lines = [line for line in block.strip().splitlines() if line.strip()]

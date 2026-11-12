@@ -117,12 +117,12 @@ def local_refs(repo: Path) -> dict[str, str]:
 
 def git_has_commit(repo: Path, sha: str) -> bool:
     return subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{sha}^{{commit}}"],
-                          capture_output=True).returncode == 0
+                          check=False, capture_output=True).returncode == 0
 
 
 def git_is_ancestor(repo: Path, older: str, newer: str) -> bool:
     return subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor", older, newer],
-                          capture_output=True).returncode == 0
+                          check=False, capture_output=True).returncode == 0
 
 
 def age_days(visit_date: str, now: dt.datetime) -> float:
